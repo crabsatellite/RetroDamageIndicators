@@ -39,7 +39,7 @@ public abstract class LivingEntityMixin extends Entity {
         if (entityDataAccessor.equals(DATA_HEALTH_ID)) {
             if (level().isClientSide && Config.INSTANCE.damageParticlesEnabled.get() && lastTrackedHealth != this.getHealth()) {
                 float difference = this.getHealth() - lastTrackedHealth;
-                if (!this.isRemoved() && this.isAddedToWorld()) {
+                if (!this.isRemoved() && this.isAddedToLevel()) {
                     RetroDamageIndicators.spawnHurtParticles(this, difference);
                 }
                 lastTrackedHealth = this.getHealth();

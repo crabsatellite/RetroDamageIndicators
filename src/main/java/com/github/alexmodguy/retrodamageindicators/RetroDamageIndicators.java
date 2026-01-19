@@ -1,18 +1,15 @@
 package com.github.alexmodguy.retrodamageindicators;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.platform.Lighting;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -22,26 +19,30 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.phys.*;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
-import net.minecraftforge.client.gui.overlay.ForgeGui;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
-import net.minecraftforge.entity.PartEntity;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+import net.neoforged.neoforge.entity.PartEntity;
+import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.platform.Lighting;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import java.util.Collection;
 
-@Mod.EventBusSubscriber(modid = "retrodamageindicators", bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(modid = "retrodamageindicators", bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public class RetroDamageIndicators {
     public static final String MODID = "retrodamageindicators";
-    private static final ResourceLocation DAMAGE_INDICATOR_TEXTURE = new ResourceLocation(MODID, "textures/gui/damage_indicator.png");
-    private static final ResourceLocation DAMAGE_INDICATOR_BACKGROUND_TEXTURE = new ResourceLocation(MODID, "textures/gui/damage_indicator_background.png");
-    private static final ResourceLocation DAMAGE_INDICATOR_HEALTH_TEXTURE = new ResourceLocation(MODID, "textures/gui/damage_indicator_health.png");
+    private static final ResourceLocation DAMAGE_INDICATOR_TEXTURE = ResourceLocation.fromNamespaceAndPath(MODID, "textures/gui/damage_indicator.png");
+    private static final ResourceLocation DAMAGE_INDICATOR_BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath(MODID, "textures/gui/damage_indicator_background.png");
+    private static final ResourceLocation DAMAGE_INDICATOR_HEALTH_TEXTURE = ResourceLocation.fromNamespaceAndPath(MODID, "textures/gui/damage_indicator_health.png");
     private static final Quaternionf ENTITY_ROTATION = (new Quaternionf()).rotationXYZ((float) Math.toRadians(30), (float) Math.toRadians(130), (float) Math.PI);
     private static LivingEntity damageIndicatorEntity;
     private static MobTypes currentMobType = MobTypes.UNKNOWN;
@@ -50,30 +51,29 @@ public class RetroDamageIndicators {
 
 
     @SubscribeEvent
-    public static void onPreRenderGuiElement(RenderGuiOverlayEvent.Pre event) {
+    public static void onPreRenderGuiElement(RenderGuiLayerEvent.Pre event) {
         if (Config.INSTANCE.hudIndicatorEnabled.get()) {
-            if (event.getOverlay().id().equals(VanillaGuiOverlay.BOSS_EVENT_PROGRESS.id()) && damageIndicatorEntity != null) {
+            if (event.getName().equals(VanillaGuiLayers.BOSS_OVERLAY) && damageIndicatorEntity != null) {
                 float entityHealth = Math.min(damageIndicatorEntity.getHealth(), damageIndicatorEntity.getMaxHealth());
                 float entityMaxHealth = damageIndicatorEntity.getMaxHealth();
                 float healthRatio = entityMaxHealth <= 0.0F ? 0.0F : entityHealth / entityMaxHealth;
                 float scale = Config.INSTANCE.hudIndicatorSize.get().floatValue();
-                int xOffset = Config.INSTANCE.hudIndicatorAlignLeft.get() ? Config.INSTANCE.hudIndicatorPositionX.get() : event.getWindow().getGuiScaledWidth() - (int) (208 * scale) - Config.INSTANCE.hudIndicatorPositionX.get();
-                int yOffset = Config.INSTANCE.hudIndicatorAlignTop.get() ? Config.INSTANCE.hudIndicatorPositionY.get() : event.getWindow().getGuiScaledHeight() - (int) (78 * scale) - Config.INSTANCE.hudIndicatorPositionY.get();
-                if (Minecraft.getInstance().gui instanceof ForgeGui forgeGui) {
-                    int bossBars = forgeGui.getBossOverlay().events.size();
-                    if (Config.INSTANCE.hudIndicatorAlignTop.get()) {
-                        if (bossBars > 0) {
-                            yOffset += Math.min(event.getWindow().getGuiScaledHeight() / 3, 12 + 19 * bossBars);
-                        }
-                        if (!Config.INSTANCE.hudIndicatorAlignLeft.get()) {
-                            int potionsActive = 0;
-                            for (MobEffectInstance mobEffectInstance : Minecraft.getInstance().player.getActiveEffects()) {
-                                if (mobEffectInstance.showIcon()) {
-                                    potionsActive++;
-                                }
+                int xOffset = Config.INSTANCE.hudIndicatorAlignLeft.get() ? Config.INSTANCE.hudIndicatorPositionX.get() : Minecraft.getInstance().getWindow().getGuiScaledWidth() - (int) (208 * scale) - Config.INSTANCE.hudIndicatorPositionX.get();
+                int yOffset = Config.INSTANCE.hudIndicatorAlignTop.get() ? Config.INSTANCE.hudIndicatorPositionY.get() : Minecraft.getInstance().getWindow().getGuiScaledHeight() - (int) (78 * scale) - Config.INSTANCE.hudIndicatorPositionY.get();
+                Gui gui = Minecraft.getInstance().gui;
+                int bossBars = gui.getBossOverlay().events.size();
+                if (Config.INSTANCE.hudIndicatorAlignTop.get()) {
+                    if (bossBars > 0) {
+                        yOffset += Math.min(Minecraft.getInstance().getWindow().getGuiScaledHeight() / 3, 12 + 19 * bossBars);
+                    }
+                    if (!Config.INSTANCE.hudIndicatorAlignLeft.get()) {
+                        int potionsActive = 0;
+                        for (MobEffectInstance mobEffectInstance : Minecraft.getInstance().player.getActiveEffects()) {
+                            if (mobEffectInstance.showIcon()) {
+                                potionsActive++;
                             }
-                            yOffset += Math.min(potionsActive, 2) * 24;
                         }
+                        yOffset += Math.min(potionsActive, 2) * 24;
                     }
                 }
                 float backgroundOpacity = Config.INSTANCE.hudIndicatorBackgroundOpacity.get().floatValue();
@@ -108,7 +108,7 @@ public class RetroDamageIndicators {
                     if ((double) biggestEntityDimension > 0.5D) {
                         renderScale /= biggestEntityDimension;
                     }
-                    renderEntityInGui(event.getGuiGraphics(), entityX, entityY, renderScale, ENTITY_ROTATION, damageIndicatorEntity, event.getPartialTick());
+                    renderEntityInGui(event.getGuiGraphics(), entityX, entityY, renderScale, ENTITY_ROTATION, damageIndicatorEntity, event.getPartialTick().getGameTimeDeltaPartialTick(false));
                 }
                 event.getGuiGraphics().disableScissor();
                 //render the second half of the entity (below y = 49)
@@ -119,7 +119,7 @@ public class RetroDamageIndicators {
                     if ((double) biggestEntityDimension > 0.5D) {
                         renderScale /= biggestEntityDimension;
                     }
-                    renderEntityInGui(event.getGuiGraphics(), entityX, entityY, renderScale, ENTITY_ROTATION, damageIndicatorEntity, event.getPartialTick());
+                    renderEntityInGui(event.getGuiGraphics(), entityX, entityY, renderScale, ENTITY_ROTATION, damageIndicatorEntity, event.getPartialTick().getGameTimeDeltaPartialTick(false));
                 }
                 event.getGuiGraphics().disableScissor();
 
@@ -222,7 +222,7 @@ public class RetroDamageIndicators {
     public static void renderEntityInGui(GuiGraphics guiGraphics, int xPos, int yPos, float scale, Quaternionf rotation, Entity entity, float partialTicks) {
         guiGraphics.pose().pushPose();
         guiGraphics.pose().translate((double) xPos, (double) yPos, -60.0D);
-        guiGraphics.pose().mulPoseMatrix((new Matrix4f()).scaling(scale, scale, (-scale)));
+        guiGraphics.pose().scale(scale, scale, -scale);
         guiGraphics.pose().mulPose(rotation);
 
         Vector3f light0 = new Vector3f(1, -1.0F, -1.0F).normalize();
@@ -234,7 +234,7 @@ public class RetroDamageIndicators {
             guiGraphics.pose().translate(0, 1.5F, 0.0D);
             guiGraphics.pose().mulPose(Axis.XP.rotationDegrees(180.0F));
             RenderType renderType = livingEntityRenderer.getModel().renderType(livingEntityRenderer.getTextureLocation(entity));
-            livingEntityRenderer.getModel().renderToBuffer(guiGraphics.pose(), guiGraphics.bufferSource().getBuffer(renderType), 15728880, LivingEntityRenderer.getOverlayCoords((LivingEntity) entity, 0.0F), 1.0F, 1.0F, 1.0F, 1.0F);
+            livingEntityRenderer.getModel().renderToBuffer(guiGraphics.pose(), guiGraphics.bufferSource().getBuffer(renderType), 15728880, LivingEntityRenderer.getOverlayCoords((LivingEntity) entity, 0.0F));
         } else {
             float f = entity.yRotO + (entity.getYRot() - entity.yRotO) * partialTicks;
             if (entity instanceof LivingEntity living) {
@@ -258,12 +258,13 @@ public class RetroDamageIndicators {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent clientTickEvent) {
-        if (clientTickEvent.phase == TickEvent.Phase.START && Minecraft.getInstance().cameraEntity != null) {
+    public static void onClientTick(ClientTickEvent.Post clientTickEvent) {
+        // In 1.21, ClientTickEvent.Post doesn't have a phase - it always fires after the tick
+        if (Minecraft.getInstance().cameraEntity != null) {
             double maxPickDistance = Config.INSTANCE.maxDistance.get();
             double pickDistance = maxPickDistance;
-            Vec3 vec3 = Minecraft.getInstance().cameraEntity.getEyePosition(Minecraft.getInstance().getPartialTick());
-            HitResult hitResult = Minecraft.getInstance().cameraEntity.pick(pickDistance, Minecraft.getInstance().getPartialTick(), false);
+            Vec3 vec3 = Minecraft.getInstance().cameraEntity.getEyePosition(Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false));
+            HitResult hitResult = Minecraft.getInstance().cameraEntity.pick(pickDistance, Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false), false);
             LivingEntity found = null;
             if (hitResult != null && hitResult.getType() != HitResult.Type.MISS) {
                 pickDistance = hitResult.getLocation().distanceToSqr(vec3);

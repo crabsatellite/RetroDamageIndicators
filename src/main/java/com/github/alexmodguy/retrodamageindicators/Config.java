@@ -1,41 +1,41 @@
 package com.github.alexmodguy.retrodamageindicators;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 
 public class Config {
-    public static final ForgeConfigSpec SPEC;
+    public static final ModConfigSpec SPEC;
     public static final Config INSTANCE;
 
     static {
-        final Pair<Config, ForgeConfigSpec> clientPair = new ForgeConfigSpec.Builder().configure(Config::new);
+        final Pair<Config, ModConfigSpec> clientPair = new ModConfigSpec.Builder().configure(Config::new);
         SPEC = clientPair.getRight();
         INSTANCE = clientPair.getLeft();
     }
 
-    public final ForgeConfigSpec.BooleanValue damageParticlesEnabled;
-    public final ForgeConfigSpec.DoubleValue damageParticleSize;
-    public final ForgeConfigSpec.BooleanValue damageParticleOutline;
-    public final ForgeConfigSpec.BooleanValue hudIndicatorEnabled;
-    public final ForgeConfigSpec.DoubleValue maxDistance;
-    public final ForgeConfigSpec.BooleanValue colorblindHealthBar;
-    public final ForgeConfigSpec.BooleanValue healthDecimals;
-    public final ForgeConfigSpec.BooleanValue healthSeperator;
-    public final ForgeConfigSpec.IntValue hudLingerTime;
-    public final ForgeConfigSpec.DoubleValue hudIndicatorSize;
-    public final ForgeConfigSpec.DoubleValue hudIndicatorBackgroundOpacity;
-    public final ForgeConfigSpec.BooleanValue hudIndicatorAlignLeft;
-    public final ForgeConfigSpec.BooleanValue hudIndicatorAlignTop;
-    public final ForgeConfigSpec.IntValue hudIndicatorPositionX;
-    public final ForgeConfigSpec.IntValue hudIndicatorPositionY;
-    public final ForgeConfigSpec.DoubleValue hudEntitySize;
-    public final ForgeConfigSpec.BooleanValue hudNameTextOutline;
-    public final ForgeConfigSpec.BooleanValue hudHealthTextOutline;
-    public final ForgeConfigSpec.ConfigValue<List<? extends String>> oldRenderEntities;
+    public final ModConfigSpec.BooleanValue damageParticlesEnabled;
+    public final ModConfigSpec.DoubleValue damageParticleSize;
+    public final ModConfigSpec.BooleanValue damageParticleOutline;
+    public final ModConfigSpec.BooleanValue hudIndicatorEnabled;
+    public final ModConfigSpec.DoubleValue maxDistance;
+    public final ModConfigSpec.BooleanValue colorblindHealthBar;
+    public final ModConfigSpec.BooleanValue healthDecimals;
+    public final ModConfigSpec.BooleanValue healthSeperator;
+    public final ModConfigSpec.IntValue hudLingerTime;
+    public final ModConfigSpec.DoubleValue hudIndicatorSize;
+    public final ModConfigSpec.DoubleValue hudIndicatorBackgroundOpacity;
+    public final ModConfigSpec.BooleanValue hudIndicatorAlignLeft;
+    public final ModConfigSpec.BooleanValue hudIndicatorAlignTop;
+    public final ModConfigSpec.IntValue hudIndicatorPositionX;
+    public final ModConfigSpec.IntValue hudIndicatorPositionY;
+    public final ModConfigSpec.DoubleValue hudEntitySize;
+    public final ModConfigSpec.BooleanValue hudNameTextOutline;
+    public final ModConfigSpec.BooleanValue hudHealthTextOutline;
+    public final ModConfigSpec.ConfigValue<List<? extends String>> oldRenderEntities;
 
-    public Config(final ForgeConfigSpec.Builder builder) {
+    public Config(final ModConfigSpec.Builder builder) {
         builder.push("damage-particles");
         damageParticlesEnabled = builder.comment("Whether the pop-up particles when a mob is injured or healed are enabled.").translation("damage_particles_enabled").define("damage_particles_enabled", true);
         damageParticleSize = builder.comment("The relative size of damage particles.").translation("damage_particle_size").defineInRange("damage_particle_size", 1.0D, 0.1D, 10.0D);
